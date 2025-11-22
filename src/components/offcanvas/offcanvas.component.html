@@ -1,0 +1,149 @@
+@if (selectedObject()) {
+  <div 
+    class="fixed inset-0 bg-black bg-opacity-50 z-40"
+    (click)="closePanel()"
+    (keydown.escape)="closePanel()"
+    tabindex="0"
+  ></div>
+  <div 
+    class="fixed top-0 right-0 h-full w-96 bg-gray-800 text-white shadow-lg z-50 transform transition-transform duration-300 ease-in-out"
+    [class.translate-x-0]="selectedObject()"
+    [class.translate-x-full]="!selectedObject()"
+  >
+    <div class="p-6 h-full flex flex-col">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold">Edit Properties</h2>
+        <button (click)="closePanel()" class="text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
+      </div>
+
+      <div class="flex-grow overflow-y-auto pr-2">
+        <!-- INTERSECTION FORM -->
+        @if (editableIntersection(); as intersection) {
+          <div class="space-y-4">
+            <p class="text-sm text-gray-400">ID: {{ intersection.id }}</p>
+            
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label for="pos-x" class="block text-sm font-medium text-gray-300">Position X</label>
+                <input 
+                  type="number"
+                  id="pos-x"
+                  [ngModel]="intersection.x"
+                  (ngModelChange)="updateIntersectionPosition('x', $event)"
+                  (change)="saveIntersectionChanges()"
+                  class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm"
+                />
+              </div>
+              <div>
+                <label for="pos-y" class="block text-sm font-medium text-gray-300">Position Y</label>
+                <input 
+                  type="number"
+                  id="pos-y"
+                  [ngModel]="intersection.y"
+                  (ngModelChange)="updateIntersectionPosition('y', $event)"
+                  (change)="saveIntersectionChanges()"
+                  class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm"
+                />
+              </div>
+            </div>
+            
+            <hr class="border-gray-600 my-4"/>
+
+            <h3 class="text-lg font-semibold text-white">Traffic Lights</h3>
+            <div class="space-y-4">
+              @for(group of trafficLightGroupsForSelectedIntersection(); track group.id) {
+                <div>
+                  <label [for]="'tlg-' + group.id" class="block text-sm font-medium text-gray-300">{{ group.roadName }}</label>
+                  <select 
+                    [id]="'tlg-' + group.id"
+                    [value]="group.state"
+                    (change)="updateTrafficLightState(group.id, $event)"
+                    class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm"
+                  >
+                    <option value="red">Red</option>
+                    <option value="red-yellow">Red + Yellow</option>
+                    <option value="yellow">Yellow</option>
+                    <option value="green">Green</option>
+                    <option value="green-blinking">Green (Blinking)</option>
+                  </select>
+                </div>
+              } @empty {
+                <p class="text-sm text-gray-400">No roads connected to this intersection.</p>
+              }
+            </div>
+
+          </div>
+        }
+
+        <!-- ROAD FORM -->
+        @if (editableRoad(); as road) {
+          <div class="space-y-4">
+            <p class="text-sm text-gray-400">ID: {{ road.id }}</p>
+            <div class="text-sm text-gray-400">
+              <p>From: {{ road.from }}</p>
+              <p>To: {{ road.to }}</p>
+            </div>
+
+            <hr class="border-gray-600 my-4"/>
+
+            <!-- Forward Lanes -->
+            <div>
+              <div class="flex justify-between items-center mb-2">
+                <h3 class="text-lg font-semibold">Forward Lanes</h3>
+                <div class="flex space-x-2">
+                   <button (click)="removeLane('forward')" class="px-2 py-1 bg-red-600 hover:bg-red-700 rounded-md text-sm">-</button>
+                   <button (click)="addLane('forward')" class="px-2 py-1 bg-green-600 hover:bg-green-700 rounded-md text-sm">+</button>
+                </div>
+              </div>
+              <div class="space-y-3">
+                @for(congestion of road.forwardLanes; track $index) {
+                  <div class="grid grid-cols-5 gap-2 items-center">
+                    <label class="col-span-2 text-sm">Lane {{ $index + 1 }}</label>
+                    <input 
+                      type="range" min="0" max="1" step="0.01"
+                      class="col-span-3 w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                      [value]="congestion"
+                      (input)="updateLaneCongestion('forward', $index, $event)"
+                    />
+                  </div>
+                } @empty {
+                  <p class="text-sm text-gray-400">No forward lanes.</p>
+                }
+              </div>
+              <p class="text-sm text-gray-300 mt-2 font-semibold">Total Forward Congestion: {{ totalForwardCongestion() }}</p>
+            </div>
+
+            <hr class="border-gray-600 my-4"/>
+
+             <!-- Backward Lanes -->
+            <div>
+              <div class="flex justify-between items-center mb-2">
+                <h3 class="text-lg font-semibold">Backward Lanes</h3>
+                <div class="flex space-x-2">
+                   <button (click)="removeLane('backward')" class="px-2 py-1 bg-red-600 hover:bg-red-700 rounded-md text-sm">-</button>
+                   <button (click)="addLane('backward')" class="px-2 py-1 bg-green-600 hover:bg-green-700 rounded-md text-sm">+</button>
+                </div>
+              </div>
+              <div class="space-y-3">
+                @for(congestion of road.backwardLanes; track $index) {
+                  <div class="grid grid-cols-5 gap-2 items-center">
+                    <label class="col-span-2 text-sm">Lane {{ $index + 1 }}</label>
+                    <input 
+                      type="range" min="0" max="1" step="0.01"
+                      class="col-span-3 w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                      [value]="congestion"
+                      (input)="updateLaneCongestion('backward', $index, $event)"
+                    />
+                  </div>
+                } @empty {
+                  <p class="text-sm text-gray-400">No backward lanes.</p>
+                }
+              </div>
+              <p class="text-sm text-gray-300 mt-2 font-semibold">Total Backward Congestion: {{ totalBackwardCongestion() }}</p>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+}

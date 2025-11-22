@@ -1,0 +1,5 @@
+{
+  "name": "Road Graph Editor",
+  "description": "A visual editor for creating and managing road graphs with intersections and multi-lane roads. Supports adding, deleting, and modifying graph elements, with state persisted in local storage.",
+  "requestFramePermissions": []
+}

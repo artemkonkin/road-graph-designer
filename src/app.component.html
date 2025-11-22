@@ -1,0 +1,13 @@
+
+<main class="h-screen w-screen flex flex-col bg-gray-900">
+  <header class="bg-gray-800 text-white p-4 shadow-md z-10 text-center">
+    <h1 class="text-2xl font-bold">Road Graph Editor</h1>
+  </header>
+  <div class="flex-grow flex flex-row overflow-hidden">
+    <app-json-viewer></app-json-viewer>
+    <div class="flex-grow relative">
+      <app-editor class="w-full h-full"></app-editor>
+      <app-offcanvas></app-offcanvas>
+    </div>
+  </div>
+</main>

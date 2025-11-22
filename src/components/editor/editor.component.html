@@ -1,0 +1,125 @@
+
+<div class.w-full h-full overflow-hidden bg-gray-800 relative select-none>
+  <svg 
+    class="w-full h-full"
+    [class.cursor-grab]="!isPanning() && !drawingRoad()"
+    [class.cursor-grabbing]="isPanning()"
+    (click)="handleSvgClick($event)"
+    (mousedown)="handleMouseDown($event)"
+    (mousemove)="handleMouseMove($event)"
+    (mouseup)="handleMouseUp($event)"
+    (mouseleave)="handleMouseLeave()"
+    (contextmenu)="$event.preventDefault()"
+    (wheel)="handleWheel($event)"
+  >
+    <defs>
+      <pattern id="grid" [attr.width]="gridSize" [attr.height]="gridSize" patternUnits="userSpaceOnUse">
+        <path [attr.d]="'M ' + gridSize + ' 0 L 0 0 0 ' + gridSize" fill="none" stroke="rgba(107, 114, 128, 0.2)" stroke-width="1"/>
+      </pattern>
+    </defs>
+
+    <g [attr.transform]="transform()">
+      <rect x="-10000" y="-10000" width="20000" height="20000" fill="url(#grid)" />
+
+      <!-- Roads -->
+      @for(road of roadsWithCoords(); track road.id) {
+        <g 
+          class="road-group" 
+          (click)="selectObject($event, road)"
+          (contextmenu)="handleContextMenu($event, road)"
+        >
+          <!-- Hitbox -->
+          <line
+            [attr.x1]="road.center.x1" [attr.y1]="road.center.y1"
+            [attr.x2]="road.center.x2" [attr.y2]="road.center.y2"
+            class="stroke-transparent cursor-pointer"
+            [attr.stroke-width]="road.forward.width + road.backward.width + 8"
+          />
+          <!-- Visuals -->
+          <line
+            [attr.x1]="road.forward.x1" [attr.y1]="road.forward.y1"
+            [attr.x2]="road.forward.x2" [attr.y2]="road.forward.y2"
+            class="pointer-events-none"
+            [attr.stroke]="road.forward.color"
+            [attr.stroke-width]="road.forward.width"
+          />
+          <line
+            [attr.x1]="road.backward.x1" [attr.y1]="road.backward.y1"
+            [attr.x2]="road.backward.x2" [attr.y2]="road.backward.y2"
+            class="pointer-events-none"
+            [attr.stroke]="road.backward.color"
+            [attr.stroke-width]="road.backward.width"
+          />
+          <line
+            [attr.x1]="road.center.x1" [attr.y1]="road.center.y1"
+            [attr.x2]="road.center.x2" [attr.y2]="road.center.y2"
+            class="stroke-gray-400 pointer-events-none"
+            stroke-width="1"
+            stroke-dasharray="6 8"
+          />
+        </g>
+      }
+
+      <!-- Drawing new road -->
+      @if(drawingRoad(); as road) {
+        <line
+          [attr.x1]="road.from.x" [attr.y1]="road.from.y"
+          [attr.x2]="road.to.x" [attr.y2]="road.to.y"
+          class="stroke-green-500 stroke-2 pointer-events-none"
+          stroke-dasharray="4 4"
+        />
+      }
+
+      <!-- Intersections -->
+      @for(intersection of graphService.intersections(); track intersection.id) {
+        <g 
+          class="cursor-pointer" 
+          (click)="selectObject($event, intersection)"
+          (mousedown)="handleMouseDownOnIntersection($event, intersection)"
+          (mouseup)="handleMouseUpOnIntersection($event, intersection)"
+          (contextmenu)="handleContextMenu($event, intersection)"
+        >
+          <rect
+            [attr.x]="intersection.x - 10"
+            [attr.y]="intersection.y - 10"
+            width="20"
+            height="20"
+            class="fill-gray-600 stroke-2 transition-all duration-150"
+            [class.stroke-sky-400]="graphService.selectedObject()?.id === intersection.id"
+            [class.stroke-gray-400]="graphService.selectedObject()?.id !== intersection.id"
+          />
+        </g>
+      }
+
+       <!-- Traffic Lights -->
+      @for(light of trafficLightsWithCoords(); track light.id) {
+        <g [attr.transform]="'translate(' + light.x + ',' + light.y + ') rotate(' + light.rotation + ')'">
+            <rect x="-5" y="-15" width="10" height="30" rx="2" class="fill-black"/>
+            <!-- Red Light -->
+            <circle cx="0" cy="-10" r="3.5" 
+                [class.fill-red-500]="light.state === 'red' || light.state === 'red-yellow'"
+                [class.fill-gray-700]="!['red', 'red-yellow'].includes(light.state)"/>
+            <!-- Yellow Light -->
+            <circle cx="0" cy="0" r="3.5" 
+                [class.fill-yellow-400]="light.state === 'yellow' || light.state === 'red-yellow'"
+                [class.fill-gray-700]="!['yellow', 'red-yellow'].includes(light.state)"/>
+            <!-- Green Light -->
+            <circle cx="0" cy="10" r="3.5" 
+                [class.fill-green-500]="light.state === 'green' || light.state === 'green-blinking'"
+                [class.fill-gray-700]="!['green', 'green-blinking'].includes(light.state)"/>
+        </g>
+      }
+    </g>
+  </svg>
+  <div class="absolute top-2 left-2 bg-gray-900 bg-opacity-70 p-3 rounded-lg text-gray-300 text-sm pointer-events-none">
+    <h3 class="font-bold text-white mb-2">Instructions</h3>
+    <ul class="list-disc list-inside space-y-1">
+      <li><span class="font-semibold">Left Click</span> on grid to add Intersection</li>
+      <li><span class="font-semibold">Drag</span> from one intersection to another to add a Road</li>
+      <li><span class="font-semibold">Right Click</span> an element to delete it</li>
+      <li><span class="font-semibold">Left Click</span> an element to edit its properties</li>
+      <li><span class="font-semibold">Mouse Wheel</span> to zoom in and out</li>
+      <li><span class="font-semibold">Middle Click & Drag</span> to pan the view</li>
+    </ul>
+  </div>
+</div>

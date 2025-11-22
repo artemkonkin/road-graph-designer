@@ -1,0 +1,4 @@
+
+.road-group:hover > line:first-of-type {
+  stroke: #38bdf8; /* sky-400 */
+}
