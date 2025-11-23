@@ -1,3 +1,4 @@
+
 @if (selectedObject()) {
   <div 
     class="fixed inset-0 bg-black bg-opacity-50 z-40"
@@ -50,22 +51,46 @@
             <hr class="border-gray-600 my-4"/>
 
             <h3 class="text-lg font-semibold text-white">Traffic Lights</h3>
-            <div class="space-y-4">
+            <div class="space-y-6">
               @for(group of trafficLightGroupsForSelectedIntersection(); track group.id) {
-                <div>
-                  <label [for]="'tlg-' + group.id" class="block text-sm font-medium text-gray-300">{{ group.roadName }}</label>
+                <div class="p-3 bg-gray-700 rounded-md">
+                  <label [for]="'tlg-' + group.id" class="block text-sm font-bold text-gray-200 mb-1">{{ group.roadName }}</label>
+                  
+                  <label class="block text-xs text-gray-400 mt-2 mb-1">Current State</label>
                   <select 
                     [id]="'tlg-' + group.id"
-                    [value]="group.state"
-                    (change)="updateTrafficLightState(group.id, $event)"
-                    class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm"
+                    [ngModel]="group.state"
+                    (ngModelChange)="updateTrafficLightState(group.id, $event)"
+                    class="block w-full bg-gray-600 border-gray-500 rounded-md shadow-sm py-1 px-2 text-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500 mb-3"
                   >
-                    <option value="red">Red</option>
-                    <option value="red-yellow">Red + Yellow</option>
-                    <option value="yellow">Yellow</option>
-                    <option value="green">Green</option>
-                    <option value="green-blinking">Green (Blinking)</option>
+                    <option [ngValue]="TrafficLightState.Red">Red</option>
+                    <option [ngValue]="TrafficLightState.Yellow">Yellow</option>
+                    <option [ngValue]="TrafficLightState.Green">Green</option>
                   </select>
+
+                  <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-xs text-red-400 mb-1">Red (s)</label>
+                        <input type="number" min="0" 
+                            [value]="group.durations[TrafficLightState.Red]"
+                            (change)="updateTrafficLightDuration(group.id, TrafficLightState.Red, $event)"
+                            class="w-full bg-gray-600 border-gray-500 rounded px-1 py-1 text-sm text-center" />
+                    </div>
+                    <div>
+                        <label class="block text-xs text-yellow-400 mb-1">Yel (s)</label>
+                        <input type="number" min="0" 
+                            [value]="group.durations[TrafficLightState.Yellow]"
+                            (change)="updateTrafficLightDuration(group.id, TrafficLightState.Yellow, $event)"
+                            class="w-full bg-gray-600 border-gray-500 rounded px-1 py-1 text-sm text-center" />
+                    </div>
+                    <div>
+                        <label class="block text-xs text-green-400 mb-1">Grn (s)</label>
+                        <input type="number" min="0" 
+                            [value]="group.durations[TrafficLightState.Green]"
+                            (change)="updateTrafficLightDuration(group.id, TrafficLightState.Green, $event)"
+                            class="w-full bg-gray-600 border-gray-500 rounded px-1 py-1 text-sm text-center" />
+                    </div>
+                  </div>
                 </div>
               } @empty {
                 <p class="text-sm text-gray-400">No roads connected to this intersection.</p>
@@ -82,6 +107,16 @@
             <div class="text-sm text-gray-400">
               <p>From: {{ road.from }}</p>
               <p>To: {{ road.to }}</p>
+              <div class="mt-2">
+                <label for="road-length" class="block text-sm font-medium text-gray-300">Length (meters)</label>
+                <input 
+                    type="number" 
+                    id="road-length"
+                    [ngModel]="road.length"
+                    (ngModelChange)="updateRoadLength($event)"
+                    class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm"
+                />
+              </div>
             </div>
 
             <hr class="border-gray-600 my-4"/>

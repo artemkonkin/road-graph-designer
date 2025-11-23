@@ -2,7 +2,7 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GraphService } from '../../services/graph.service';
-import { Intersection, Road, GraphObject } from '../../models';
+import { Intersection, Road, GraphObject, TrafficLightState } from '../../models';
 
 interface Point {
   x: number;
@@ -19,6 +19,9 @@ interface Point {
 export class EditorComponent {
   graphService = inject(GraphService);
   gridSize = 20;
+
+  // Make Enum available in template
+  TrafficLightState = TrafficLightState;
 
   drawingRoad: WritableSignal<{ from: Intersection; to: Point } | null> = signal(null);
 

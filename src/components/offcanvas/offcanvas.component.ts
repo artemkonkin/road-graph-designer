@@ -1,3 +1,4 @@
+
 import { Component, ChangeDetectionStrategy, inject, computed, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -12,6 +13,9 @@ import { GraphObject, Intersection, Road, TrafficLightState } from '../../models
 })
 export class OffcanvasComponent {
   graphService = inject(GraphService);
+  
+  // Expose Enum for template
+  TrafficLightState = TrafficLightState;
 
   selectedObject = this.graphService.selectedObject;
 
@@ -45,7 +49,7 @@ export class OffcanvasComponent {
           const otherEnd = this.graphService.getIntersectionById(otherEndId ?? '');
           return {
             ...group,
-            roadName: `Road to int_${otherEnd?.id.split('_')[1] ?? '...'}`,
+            roadName: `Road to ${otherEnd?.id.slice(0, 8) ?? 'Unknown'}`,
           };
         });
     }
@@ -89,6 +93,14 @@ export class OffcanvasComponent {
     }
   }
 
+  updateRoadLength(value: number) {
+    this.editableRoad.update(road => {
+        if (!road) return null;
+        return { ...road, length: value };
+    });
+    this.saveRoadChanges();
+  }
+
   updateLaneCongestion(direction: 'forward' | 'backward', index: number, event: Event) {
     const value = parseFloat((event.target as HTMLInputElement).value);
     this.editableRoad.update(road => {
@@ -129,9 +141,16 @@ export class OffcanvasComponent {
     this.saveRoadChanges();
   }
 
-  updateTrafficLightState(groupId: string, event: Event) {
-    const select = event.target as HTMLSelectElement;
-    this.graphService.updateTrafficLightState(groupId, select.value as TrafficLightState);
+  updateTrafficLightState(groupId: string, state: TrafficLightState) {
+    this.graphService.updateTrafficLightState(groupId, state);
+  }
+
+  updateTrafficLightDuration(groupId: string, state: TrafficLightState, event: Event) {
+    const input = event.target as HTMLInputElement;
+    const val = parseInt(input.value, 10);
+    if (!isNaN(val) && val >= 0) {
+        this.graphService.updateTrafficLightDuration(groupId, state, val);
+    }
   }
 
   closePanel() {

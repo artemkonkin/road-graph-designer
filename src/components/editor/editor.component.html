@@ -1,5 +1,5 @@
 
-<div class.w-full h-full overflow-hidden bg-gray-800 relative select-none>
+<div class="w-full h-full overflow-hidden bg-gray-800 relative select-none">
   <svg 
     class="w-full h-full"
     [class.cursor-grab]="!isPanning() && !drawingRoad()"
@@ -97,16 +97,16 @@
             <rect x="-5" y="-15" width="10" height="30" rx="2" class="fill-black"/>
             <!-- Red Light -->
             <circle cx="0" cy="-10" r="3.5" 
-                [class.fill-red-500]="light.state === 'red' || light.state === 'red-yellow'"
-                [class.fill-gray-700]="!['red', 'red-yellow'].includes(light.state)"/>
+                [class.fill-red-500]="light.state === TrafficLightState.Red"
+                [class.fill-gray-700]="light.state !== TrafficLightState.Red"/>
             <!-- Yellow Light -->
             <circle cx="0" cy="0" r="3.5" 
-                [class.fill-yellow-400]="light.state === 'yellow' || light.state === 'red-yellow'"
-                [class.fill-gray-700]="!['yellow', 'red-yellow'].includes(light.state)"/>
+                [class.fill-yellow-400]="light.state === TrafficLightState.Yellow"
+                [class.fill-gray-700]="light.state !== TrafficLightState.Yellow"/>
             <!-- Green Light -->
             <circle cx="0" cy="10" r="3.5" 
-                [class.fill-green-500]="light.state === 'green' || light.state === 'green-blinking'"
-                [class.fill-gray-700]="!['green', 'green-blinking'].includes(light.state)"/>
+                [class.fill-green-500]="light.state === TrafficLightState.Green"
+                [class.fill-gray-700]="light.state !== TrafficLightState.Green"/>
         </g>
       }
     </g>

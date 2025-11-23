@@ -1,6 +1,6 @@
-
 import { Injectable, signal, effect } from '@angular/core';
 import { Intersection, Road, GraphObject, TrafficLightGroup, TrafficLightState } from '../models';
+import { uuidv7 } from 'uuidv7';
 
 const STORAGE_KEY_INTERSECTIONS = 'roadGraphIntersections';
 const STORAGE_KEY_ROADS = 'roadGraphRoads';
@@ -29,13 +29,58 @@ export class GraphService {
       if (intersectionsData) {
         this.intersections.set(JSON.parse(intersectionsData));
       }
+      
       const roadsData = localStorage.getItem(STORAGE_KEY_ROADS);
       if (roadsData) {
-        this.roads.set(JSON.parse(roadsData));
+        let roads: Road[] = JSON.parse(roadsData);
+        // Migration: Set default length for existing roads if missing
+        roads = roads.map(r => {
+            if (typeof r.length !== 'number') {
+                return { ...r, length: 250 };
+            }
+            return r;
+        });
+        this.roads.set(roads);
       }
+
       const trafficLightsData = localStorage.getItem(STORAGE_KEY_TRAFFIC_LIGHT_GROUPS);
       if (trafficLightsData) {
-        this.trafficLightGroups.set(JSON.parse(trafficLightsData));
+        let groups: any[] = JSON.parse(trafficLightsData);
+        
+        // Migration: Convert strings to Enums and consolidate durations
+        const migratedGroups: TrafficLightGroup[] = groups.map(g => {
+            let state = g.state;
+            // Migrate legacy string states to Enum numbers
+            if (typeof state === 'string') {
+                switch(state) {
+                    case 'red': state = TrafficLightState.Red; break;
+                    case 'yellow': state = TrafficLightState.Yellow; break;
+                    case 'green': state = TrafficLightState.Green; break;
+                    default: state = TrafficLightState.Red;
+                }
+            }
+            
+            // Sanitize legacy numeric states: 4 (RedYellow) -> Red, 5 (GreenBlinking) -> Green
+            if (state === 4) state = TrafficLightState.Red;
+            if (state === 5) state = TrafficLightState.Green;
+
+            // Migrate flat duration fields to durations object
+            let durations = g.durations;
+            if (!durations) {
+                durations = {
+                    [TrafficLightState.Red]: g.redDuration ?? 60,
+                    [TrafficLightState.Yellow]: g.yellowDuration ?? 3,
+                    [TrafficLightState.Green]: g.greenDuration ?? 45
+                };
+            }
+
+            return {
+                ...g,
+                state: state,
+                durations: durations
+            };
+        });
+        this.trafficLightGroups.set(migratedGroups);
       }
     } catch (e) {
       console.error('Failed to load graph from local storage', e);
@@ -56,7 +101,7 @@ export class GraphService {
 
   addIntersection(x: number, y: number) {
     const newIntersection: Intersection = {
-      id: `int_${Date.now()}`,
+      id: uuidv7(),
       x,
       y,
     };
@@ -77,9 +122,11 @@ export class GraphService {
   }
 
   updateIntersection(updatedIntersection: Intersection) {
+    // 1. Update the intersection itself
     this.intersections.update(intersections =>
       intersections.map(i => (i.id === updatedIntersection.id ? updatedIntersection : i))
     );
+
     if (this.selectedObject()?.id === updatedIntersection.id) {
       this.selectedObject.set(updatedIntersection);
     }
@@ -92,27 +139,41 @@ export class GraphService {
       return; // Road already exists
     }
 
+    const fromNodeObj = this.getIntersectionById(fromId);
+    const toNodeObj = this.getIntersectionById(toId);
+
+    if (!fromNodeObj || !toNodeObj) return;
+
     const newRoad: Road = {
-      id: `road_${Date.now()}`,
+      id: uuidv7(),
       from: fromId,
       to: toId,
       forwardLanes: [0],
       backwardLanes: [0],
+      length: 250, // Default fixed length
     };
     this.roads.update(roads => [...roads, newRoad]);
 
+    const defaultDurations = {
+        [TrafficLightState.Red]: 60,
+        [TrafficLightState.Yellow]: 3,
+        [TrafficLightState.Green]: 45
+    };
+
     // Create traffic light groups for each end of the road
     const groupForTo: TrafficLightGroup = {
-      id: `tlg_${newRoad.id}_${toId}`,
+      id: uuidv7(),
       roadId: newRoad.id,
       intersectionId: toId,
-      state: 'red'
+      state: TrafficLightState.Red,
+      durations: { ...defaultDurations }
     };
      const groupForFrom: TrafficLightGroup = {
-      id: `tlg_${newRoad.id}_${fromId}`,
+      id: uuidv7(),
       roadId: newRoad.id,
       intersectionId: fromId,
-      state: 'red'
+      state: TrafficLightState.Red,
+      durations: { ...defaultDurations }
     };
     this.trafficLightGroups.update(groups => [...groups, groupForTo, groupForFrom]);
   }
@@ -139,6 +200,23 @@ export class GraphService {
   updateTrafficLightState(groupId: string, state: TrafficLightState) {
     this.trafficLightGroups.update(groups => 
       groups.map(g => g.id === groupId ? {...g, state} : g)
+    );
+  }
+
+  updateTrafficLightDuration(groupId: string, state: TrafficLightState, duration: number) {
+    this.trafficLightGroups.update(groups => 
+        groups.map(g => {
+            if (g.id === groupId) {
+                return {
+                    ...g,
+                    durations: {
+                        ...g.durations,
+                        [state]: duration
+                    }
+                };
+            }
+            return g;
+        })
     );
   }
 
